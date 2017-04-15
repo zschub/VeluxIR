@@ -1,17 +1,26 @@
 #include "VeluxIR.h"
 #include "Arduino.h"
 
-//#define MARK_SHORT 320 // us
-//#define MARK_LONG 1100
-//#define SPACE_SHORT 380
-//#define SPACE_LONG 1220
-#define MARK_SHORT 460 // us
-#define MARK_LONG 1400
-#define SPACE_SHORT 485
-#define SPACE_LONG 1275
+// '0' and '1' durations are asymetric. All durations are in
+// pretend microseconds. These durations may be normalized by
+// working out the duration of digitalWrite() on a platform - assuming
+// delayMicroseconds() is accurate across different hardware.
 
-#define REPEAT_DELAY 20  // ms
-#define DEBOUNCE_DELAY 500 // ms
+// We call a '1' a MARK_LONG followed by a SPACE_SHORT
+// We call a '0' a MARK_SHORT followed by a SPACE_LONG
+
+// ESP8266
+#define MARK_LONG 1441
+#define SPACE_SHORT 440 // 1860
+#define MARK_SHORT 479
+#define SPACE_LONG 1275  // 1760
+// ARDUINO UNO
+// #define MARK_LONG 1100
+// #define SPACE_SHORT 380  // 1480
+// #define MARK_SHORT 320
+// #define SPACE_LONG 1220 // 1550
+
+#define REPEAT_DELAY 26  // ms
 
 #define PROTOCOL_BITS 24
 
@@ -69,11 +78,32 @@ void VeluxIR::transmit (short motor, enum command direction) {
 
   for (int i = 0; i < PROTOCOL_BITS; i++) { //iterate through bit mask
     if (code & mask) {
+      // send a '1'
       pulseIR(MARK_LONG);
-      delayMicroseconds(MARK_SHORT);
+      delayMicroseconds(SPACE_SHORT);
     }
     else {
-      pulseIR(SPACE_SHORT);
+      // send a '0'
+      pulseIR(MARK_SHORT);
+      delayMicroseconds(SPACE_LONG);
+    }
+    mask >>= 1;
+  }
+
+  // The Velux remote pauses and retransmits. Sending once generally
+  // works ok but we'll follow slavishly since the Velux micro expacts
+  // this behaviour.
+  delay (REPEAT_DELAY);
+
+  for (int i = 0; i < PROTOCOL_BITS; i++) { //iterate through bit mask
+    if (code & mask) {
+      // send a '1'
+      pulseIR(MARK_LONG);
+      delayMicroseconds(SPACE_SHORT);
+    }
+    else {
+      // send a '0'
+      pulseIR(MARK_SHORT);
       delayMicroseconds(SPACE_LONG);
     }
     mask >>= 1;
