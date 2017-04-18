@@ -11,16 +11,16 @@
 
 // ESP8266
 #define MARK_LONG 1441
-#define SPACE_SHORT 440 // 1860
+#define SPACE_SHORT 440 // 1881
 #define MARK_SHORT 479
-#define SPACE_LONG 1275  // 1760
+#define SPACE_LONG 1275  // 1754
 // ARDUINO UNO
 // #define MARK_LONG 1100
 // #define SPACE_SHORT 380  // 1480
 // #define MARK_SHORT 320
 // #define SPACE_LONG 1220 // 1550
 
-#define REPEAT_DELAY 26  // ms
+#define REPEAT_DELAY 25  // ms
 
 #define PROTOCOL_BITS 24
 
@@ -95,6 +95,9 @@ void VeluxIR::transmit (short motor, enum command direction) {
   // this behaviour.
   delay (REPEAT_DELAY);
 
+  // reset mask
+  mask = pow (2, PROTOCOL_BITS - 1);
+  
   for (int i = 0; i < PROTOCOL_BITS; i++) { //iterate through bit mask
     if (code & mask) {
       // send a '1'
